@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Create original YouTube scripts with AI.">
+<title>Video Clone AI</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#f8fafc;font-family:Arial,sans-serif}
+main{max-width:900px;margin:36px auto;padding:18px}
+.panel{background:#151d32;border:1px solid #293653;border-radius:18px;padding:24px}
+h1{margin:0 0 8px;font-size:30px}.muted{color:#aab6cc;line-height:1.55}
+label{display:block;margin:17px 0 8px;font-weight:700}
+input,select,textarea{width:100%;padding:13px;border-radius:10px;border:1px solid #3b4965;background:#0d1528;color:white;font-size:15px}
+textarea{min-height:190px;resize:vertical;line-height:1.5}
+button{margin-top:14px;padding:13px 18px;border:0;border-radius:10px;background:#e33445;color:white;font-weight:700;cursor:pointer}
+button:disabled{opacity:.55;cursor:wait}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.status{white-space:pre-wrap;color:#fbbf24;margin-top:12px;line-height:1.5}
+.small{font-size:12px;color:#94a3b8;margin-top:18px}
+@media(max-width:600px){.row{grid-template-columns:1fr}main{margin:8px auto;padding:10px}.panel{padding:17px}}
+</style>
+</head>
+<body>
+<main><section class="panel">
+<h1>🎬 Video Clone AI</h1>
+<p class="muted">Public YouTube captions se topic samjho aur ek nayi, original script banao. Yeh tool kisi aur ka video, voice ya footage copy nahi karta.</p>
+
+<label for="url">YouTube video URL</label>
+<input id="url" type="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="url">
+
+<div class="row">
+<div><label for="language">Output language</label>
+<select id="language"><option>Hindi</option><option>Hinglish</option><option>English</option></select></div>
+<div><label for="minutes">Target video duration</label>
+<select id="minutes">
+<option value="3">3 minutes</option><option value="5" selected>5 minutes</option>
+<option value="10">10 minutes</option><option value="15">15 minutes</option>
+<option value="20">20 minutes</option><option value="30">30 minutes</option>
+</select></div></div>
+
+<label for="style">Script style</label>
+<select id="style"><option>engaging explainer</option><option>documentary narration</option><option>storytelling</option><option>educational</option></select>
+
+<button id="analyze" onclick="analyzeVideo()">1. Analyze captions</button>
+<div id="status" class="status" role="status"></div>
+
+<label for="transcript">Transcript (editable)</label>
+<textarea id="transcript" placeholder="Captions milne ke baad yahan dikhenge. Zarurat ho to edit kar sakte hain."></textarea>
+<button id="generate" onclick="generateScript()">2. Generate original script</button>
+
+<label for="script">Generated script</label>
+<textarea id="script" placeholder="Aapki original script yahan aayegi..."></textarea>
+<button onclick="copyScript()">Copy script</button>
+<p class="small">Note: Transcript sirf un videos se mil sakta hai jinke captions accessible hon. AI output ko publish karne se pehle fact-check karein aur third-party footage/audio ke rights ka dhyan rakhein.</p>
+</section></main>
+<script>
+const statusBox=document.getElementById('status');
+async function apiRequest(path,payload){
+ const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ const data=await response.json();
+ if(!response.ok) throw new Error(data.detail||'Request failed');
+ return data;
+}
+async function analyzeVideo(){
+ const button=document.getElementById('analyze');button.disabled=true;
+ statusBox.textContent='Captions fetch ho rahe hain...';
+ try{
+  const data=await apiRequest('/api/analyze',{url:document.getElementById('url').value});
+  document.getElementById('transcript').value=data.transcript;
+  statusBox.textContent='Captions mil gaye. Ab original script generate karein.';
+ }catch(error){statusBox.textContent=error.message;}
+ finally{button.disabled=false;}
+}
+async function generateScript(){
+ const button=document.getElementById('generate');button.disabled=true;
+ statusBox.textContent='AI script generate kar raha hai...';
+ try{
+  const data=await apiRequest('/api/generate-script',{
+   transcript:document.getElementById('transcript').value,
+   language:document.getElementById('language').value,
+   style:document.getElementById('style').value,
+   target_minutes:Number(document.getElementById('minutes').value)
+  });
+  document.getElementById('script').value=data.script;
+  statusBox.textContent='Original script ready.';
+ }catch(error){statusBox.textContent=error.message;}
+ finally{button.disabled=false;}
+}
+async function copyScript(){
+ const value=document.getElementById('script').value;
+ if(!value){statusBox.textContent='Copy karne ke liye pehle script generate karein.';return;}
+ try{await navigator.clipboard.writeText(value);statusBox.textContent='Script copied.';}
+ catch(e){statusBox.textContent='Clipboard access nahi mila. Script manually select karke copy karein.';}
+}
+</script>
+</body></html>
